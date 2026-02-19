@@ -1,12 +1,12 @@
-# 🌅 Charlotte Daily Family Brief
+# Charlotte Daily Family Brief
 
 A privacy-first, local-only Streamlit dashboard designed for a Charlotte, NC family to check each morning.
 
 This app combines:
-- 🌤️ Weather and air quality in Charlotte
-- 📰 Top U.S. headlines
-- 🏈 Panthers & Hornets game snapshots
-- 📋 Shared grocery and to-do lists with local autosave
+- Weather and air quality in Charlotte
+- Top U.S. headlines
+- Panthers & Hornets game snapshots
+- Shared grocery and to-do lists with local autosave
 
 No cloud deployment, no database, no Docker—just `streamlit run app.py` on your local machine.
 
@@ -119,9 +119,13 @@ These files are git-ignored so your household data stays local.
 
 ## Notes
 
-- News requires a valid key from [NewsAPI.org](https://newsapi.org/)
-- Sports data is pulled from ESPN public scoreboard endpoints
-- Weather and AQI data are pulled from Open-Meteo public APIs
+- News requires a valid key from [NewsAPI.org](https://newsapi.org/).
+- Sports data is pulled from ESPN public scoreboard endpoints and does **not** require an API key.
+- Weather and AQI data are pulled from Open-Meteo public APIs.
+
+## Sports troubleshooting
+
+If the sports panel looks empty, it may be offseason for one or both teams. The app now surfaces explicit offseason/no-scheduled-games messaging instead of leaving blank fields.
 
 ---
 

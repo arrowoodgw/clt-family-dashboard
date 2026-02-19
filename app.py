@@ -14,10 +14,13 @@ import streamlit as st
 
 from utils import (
     GROCERY_PATH,
+    NBA_SCOREBOARD_URL,
+    NFL_SCOREBOARD_URL,
     TODO_PATH,
     ensure_data_files,
     forecast_to_dataframe,
     get_air_quality_data,
+    get_default_sports_window,
     get_espn_scoreboard,
     get_top_news,
     get_weather_data,
@@ -28,19 +31,19 @@ from utils import (
 )
 
 # Wide layout improves readability for metric-heavy dashboards.
-st.set_page_config(page_title="Charlotte Daily Family Brief", page_icon="🌅", layout="wide")
+st.set_page_config(page_title="Charlotte Daily Family Brief", layout="wide")
 
 # Ensure local JSON files exist on startup before any read/write operations.
 ensure_data_files()
 
 # Header section.
-st.title("🌅 Charlotte Daily Family Brief")
+st.title("Charlotte Daily Family Brief")
 st.caption(f"Today is {datetime.now().strftime('%A, %B %d, %Y')}")
-st.write("")
+st.divider()
 
 # Required tab order and naming.
 tab_weather, tab_news, tab_sports, tab_lists = st.tabs(
-    ["🌤️ Weather & Air", "📰 Top News", "🏈 Panthers & Hornets", "📋 Grocery & Todo"]
+    ["Weather & Air", "Top News", "Panthers & Hornets", "Grocery & Todo"]
 )
 
 with tab_weather:
@@ -83,7 +86,7 @@ with tab_weather:
     else:
         st.error("Weather data is currently unavailable. Please try again shortly.")
 
-    st.markdown("---")
+    st.divider()
     st.subheader("Air Quality")
 
     if air_data:
@@ -127,39 +130,54 @@ with tab_news:
                         st.markdown(f"[Read full article]({url})")
 
 with tab_sports:
-    st.subheader("Carolina Teams Snapshot")
+    st.subheader("Panthers and Hornets Snapshot")
+    sports_window = get_default_sports_window()
 
-    nfl_url = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard"
-    nba_url = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard"
+    with st.spinner("Fetching Panthers and Hornets schedules..."):
+        nfl_data = get_espn_scoreboard(NFL_SCOREBOARD_URL, sports_window)
+        nba_data = get_espn_scoreboard(NBA_SCOREBOARD_URL, sports_window)
 
-    with st.spinner("Fetching latest Panthers and Hornets info..."):
-        nfl_data = get_espn_scoreboard(nfl_url)
-        nba_data = get_espn_scoreboard(nba_url)
-
-    panthers = parse_team_snapshot(nfl_data, "Carolina Panthers")
-    hornets = parse_team_snapshot(nba_data, "Charlotte Hornets")
+    panthers = parse_team_snapshot("NFL", nfl_data, "Carolina Panthers", "CAR")
+    hornets = parse_team_snapshot("NBA", nba_data, "Charlotte Hornets", "CHA")
 
     col_panthers, col_hornets = st.columns(2)
 
     with col_panthers:
-        st.markdown("### 🐾 Carolina Panthers")
+        st.subheader("Carolina Panthers")
         st.metric("Recent Score", panthers["recent_score"])
-        st.write(f"**Opponent:** {panthers['opponent']}")
-        st.write(f"**Most Recent Game:** {panthers['recent']}")
-        st.write(f"**Next Game:** {panthers['next_game']}")
+        st.caption(panthers["recent_detail"])
+        st.metric("Next Game", panthers["next_game"])
+        st.caption(panthers["next_detail"])
+
+        if panthers["error"]:
+            st.warning(panthers["error"])
 
     with col_hornets:
-        st.markdown("### 🐝 Charlotte Hornets")
+        st.subheader("Charlotte Hornets")
         st.metric("Recent Score", hornets["recent_score"])
-        st.write(f"**Opponent:** {hornets['opponent']}")
-        st.write(f"**Most Recent Game:** {hornets['recent']}")
-        st.write(f"**Next Game:** {hornets['next_game']}")
+        st.caption(hornets["recent_detail"])
+        st.metric("Next Game", hornets["next_game"])
+        st.caption(hornets["next_detail"])
+
+        if hornets["error"]:
+            st.warning(hornets["error"])
+
+    with st.expander("Debug (Sports)"):
+        st.write("Panthers debug")
+        st.write(f"Endpoint URL used: {panthers['request_url']}")
+        st.write(f"Events returned: {panthers['events_count']}")
+        st.write(f"Matched games: {panthers['matched_games_count']}")
+
+        st.write("Hornets debug")
+        st.write(f"Endpoint URL used: {hornets['request_url']}")
+        st.write(f"Events returned: {hornets['events_count']}")
+        st.write(f"Matched games: {hornets['matched_games_count']}")
 
 with tab_lists:
     st.subheader("Shared Family Lists")
 
     # Grocery section.
-    st.markdown("### 🛒 Grocery List")
+    st.markdown("### Grocery List")
     grocery_rows = load_json_rows(GROCERY_PATH)
     grocery_df = pd.DataFrame(grocery_rows or [{"Item": "", "Quantity": "", "Notes": ""}])
 
@@ -179,10 +197,10 @@ with tab_lists:
     save_json_rows(GROCERY_PATH, clean_grocery.to_dict(orient="records"))
     st.caption("Grocery list autosaves locally to data/family_grocery.json")
 
-    st.markdown("---")
+    st.divider()
 
     # Todo section.
-    st.markdown("### ✅ Family Todo")
+    st.markdown("### Family Todo")
     todo_rows = load_json_rows(TODO_PATH)
     todo_df = pd.DataFrame(todo_rows or [{"Task": "", "Done": False}])
 
